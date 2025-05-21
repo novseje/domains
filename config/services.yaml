@@ -25,6 +25,6 @@ services:
 
     App\Service\DomainsHelper:
         arguments:
-            $koloBotUrl: '%env(NGINX_SITES_AVAILABLE_DIR)%'
-            $cosmonovaBotUrl: '%env(NGINX_SITES_ENABLED_DIR)%'
+            $nginxSitesAvailableDir: '%env(NGINX_SITES_AVAILABLE_DIR)%'
+            $nginxSitesEnabledDir: '%env(NGINX_SITES_ENABLED_DIR)%'
 

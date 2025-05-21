@@ -5,22 +5,21 @@ namespace App\Controller;
 use App\Service\DomainsHelper;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse; // Use JsonResponse for cleaner API responses
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\Serializer\SerializerInterface;
 
 #[Route('/api/v1/domains', name: 'domains_')]
 class DomainsController extends AbstractController
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-        private readonly SerializerInterface $serializer,
         private readonly DomainsHelper $domainsHelper,
     ) {}
 
     #[Route('/', name: 'list', methods: ['GET'])]
-    public function list(Request $request): Response
+    public function list(): JsonResponse
     {
         $list = $this->domainsHelper->getAvailableList();
 
@@ -28,29 +27,54 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}', name: 'get', methods: ['GET'])]
-    public function getDomain(Request $request): Response
+    public function getDomain(string $domain): JsonResponse
     {
-        $data = $this->domainsHelper->getDomainInfo();
+        $data = $this->domainsHelper->getDomainInfo($domain);
+
+        if (empty($data)) {
+            return $this->json(['message' => 'Domain not found or could not be retrieved.'], Response::HTTP_NOT_FOUND);
+        }
 
         return $this->json($data, Response::HTTP_OK);
     }
 
     #[Route('/{domain}', name: 'add', methods: ['POST'])]
-    public function addDomain(Request $request): Response
+    public function addDomain(string $domain, Request $request): Response
     {
-        $this->domainsHelper->addDomamin();
+        if ($this->domainsHelper->addDomain($domain)) {
+            return $this->json(['message' => sprintf('Domain %s added successfully.', $domain)], Response::HTTP_CREATED);
+        }
 
-        return new Response('OK', 200);
+        return $this->json(['message' => sprintf('Failed to add domain %s.', $domain)], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     #[Route('/{domain}', name: 'delete', methods: ['DELETE'])]
-    public function deleteDomain(Request $request): Response
+    public function deleteDomain(string $domain): JsonResponse
     {
-        $this->domainsHelper->deleteDomain();
+        if ($this->domainsHelper->deleteDomain($domain)) {
+            return $this->json(['message' => sprintf('Domain %s deleted successfully.', $domain)], Response::HTTP_OK);
+        }
 
-        return new Response('OK', 201);
+        return $this->json(['message' => sprintf('Failed to delete domain %s.', $domain)], Response::HTTP_INTERNAL_SERVER_ERROR);
     }
 
+    #[Route('/{domain}/enable', name: 'enable', methods: ['PUT'])]
+    public function enableDomain(string $domain): JsonResponse
+    {
+        if ($this->domainsHelper->enableDomain($domain)) {
+            return $this->json(['message' => sprintf('Domain %s enabled successfully.', $domain)], Response::HTTP_OK);
+        }
 
+        return $this->json(['message' => sprintf('Failed to enable domain %s. Check logs for details.', $domain)], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
 
+    #[Route('/{domain}/disable', name: 'disable', methods: ['PUT'])]
+    public function disableDomain(string $domain): JsonResponse
+    {
+        if ($this->domainsHelper->disableDomain($domain)) {
+            return $this->json(['message' => sprintf('Domain %s disabled successfully.', $domain)], Response::HTTP_OK);
+        }
+
+        return $this->json(['message' => sprintf('Failed to disable domain %s. Check logs for details.', $domain)], Response::HTTP_INTERNAL_SERVER_ERROR);
+    }
 }

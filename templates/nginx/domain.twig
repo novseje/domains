@@ -1,0 +1,12 @@
+server {
+    listen 80;
+    server_name {{domain}};
+
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    include snippets/ssl_accessibilitychecker.org.conf;
+    include snippets/ssl-params.conf;
+
+
+    include /etc/nginx/_ac_params.conf;
+}
