@@ -3,30 +3,26 @@
 namespace App\Controller;
 
 use App\Dto\DomainInfo;
-use App\Dto\DomainInList;
 use App\Service\DomainsHelper;
-use Psr\Log\LoggerInterface;
 use Nelmio\ApiDocBundle\Attribute\Model;
-use Nelmio\ApiDocBundle\Attribute\Security;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\JsonResponse; // Use JsonResponse for cleaner API responses
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/v1/domains', name: 'domains_')]
 class DomainsController extends AbstractController
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
         private readonly DomainsHelper $domainsHelper,
     ) {}
 
     #[Route('/', name: 'list', methods: ['GET'])]
     #[OA\Response(
         response: 200,
-        description: 'Successful response',
+        description: 'Get list of all available domains',
         content: new OA\JsonContent(
             type: 'array',
             //items: new OA\Items(ref: new Model(type: DomainInList::class))
@@ -58,6 +54,10 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}', name: 'add', methods: ['POST'])]
+    #[OA\Response(
+        response: Response::HTTP_CREATED,
+        description: 'Add new domain'
+    )]
     public function addDomain(string $domain, Request $request): Response
     {
         if ($this->domainsHelper->addDomain($domain)) {
@@ -68,6 +68,10 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}', name: 'delete', methods: ['DELETE'])]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Delete domain'
+    )]
     public function deleteDomain(string $domain): JsonResponse
     {
         if ($this->domainsHelper->deleteDomain($domain)) {
@@ -78,6 +82,10 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}/enable', name: 'enable', methods: ['PUT'])]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Enable domain'
+    )]
     public function enableDomain(string $domain): JsonResponse
     {
         if ($this->domainsHelper->enableDomain($domain)) {
@@ -88,6 +96,10 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}/disable', name: 'disable', methods: ['PUT'])]
+    #[OA\Response(
+        response: Response::HTTP_OK,
+        description: 'Disable domain'
+    )]
     public function disableDomain(string $domain): JsonResponse
     {
         if ($this->domainsHelper->disableDomain($domain)) {

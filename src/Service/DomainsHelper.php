@@ -8,6 +8,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
+use Twig\Error\LoaderError;
+use Twig\Error\RuntimeError;
+use Twig\Error\SyntaxError;
 
 class DomainsHelper
 {
@@ -78,6 +81,9 @@ class DomainsHelper
      *
      * @param string $domain The name of the domain file (e.g., 'yourdomain.com').
      * @return bool True if the domain was added successfully, false otherwise.
+     * @throws LoaderError
+     * @throws RuntimeError
+     * @throws SyntaxError
      */
     public function addDomain(string $domain): bool
     {
