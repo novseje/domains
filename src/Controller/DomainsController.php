@@ -2,8 +2,13 @@
 
 namespace App\Controller;
 
+use App\Dto\DomainInfo;
+use App\Dto\DomainInList;
 use App\Service\DomainsHelper;
 use Psr\Log\LoggerInterface;
+use Nelmio\ApiDocBundle\Attribute\Model;
+use Nelmio\ApiDocBundle\Attribute\Security;
+use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse; // Use JsonResponse for cleaner API responses
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +24,15 @@ class DomainsController extends AbstractController
     ) {}
 
     #[Route('/', name: 'list', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Successful response',
+        content: new OA\JsonContent(
+            type: 'array',
+            //items: new OA\Items(ref: new Model(type: DomainInList::class))
+            items: new OA\Items(type: "string", example: "yourdomain.com")
+        )
+    )]
     public function list(): JsonResponse
     {
         $list = $this->domainsHelper->getAvailableList();
@@ -27,6 +41,11 @@ class DomainsController extends AbstractController
     }
 
     #[Route('/{domain}', name: 'get', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Show domain info',
+        content: new Model(type: DomainInfo::class)
+    )]
     public function getDomain(string $domain): JsonResponse
     {
         $data = $this->domainsHelper->getDomainInfo($domain);
