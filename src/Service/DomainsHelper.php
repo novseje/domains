@@ -19,6 +19,7 @@ class DomainsHelper
     public function __construct(
         private readonly string $nginxSitesAvailableDir,
         private readonly string $nginxSitesEnabledDir,
+        private readonly string $nginxReloadFile,
         private readonly LoggerInterface $logger,
         private readonly Environment $twig,
     ) {
@@ -97,6 +98,8 @@ class DomainsHelper
             $this->filesystem->dumpFile($filePath, $fileContent);
             $this->logger->info(sprintf('Domain configuration file created: %s', $filePath));
 
+            $this->reloadNginx();
+
             return true;
         } catch (IOExceptionInterface $e) {
             $this->logger->error(sprintf('Error adding domain %s: %s', $domain, $e->getMessage()));
@@ -134,6 +137,8 @@ class DomainsHelper
                 $this->logger->info(sprintf('No symbolic link found in sites-enabled for: %s', $domain));
             }
 
+            $this->reloadNginx();
+
             return true;
         } catch (IOExceptionInterface $e) {
             $this->logger->error(sprintf('Error deleting domain %s: %s', $domain, $e->getMessage()));
@@ -169,6 +174,8 @@ class DomainsHelper
             $this->filesystem->symlink($availablePath, $enabledPath);
             $this->logger->info(sprintf('Symbolic link created for domain %s: %s -> %s', $domain, $availablePath, $enabledPath));
 
+            $this->reloadNginx();
+
             return true;
         } catch (IOExceptionInterface $e) {
             $this->logger->error(sprintf('Error enabling domain %s: %s', $domain, $e->getMessage()));
@@ -197,11 +204,18 @@ class DomainsHelper
             $this->filesystem->remove($enabledPath);
             $this->logger->info(sprintf('Symbolic link removed for domain %s from sites-enabled: %s', $domain, $enabledPath));
 
+            $this->reloadNginx();
+
             return true;
         } catch (IOExceptionInterface $e) {
             $this->logger->error(sprintf('Error disabling domain %s: %s', $domain, $e->getMessage()));
 
             return false;
         }
+    }
+
+    private function reloadNginx(): void
+    {
+        file_put_contents($this->nginxReloadFile, '');
     }
 }

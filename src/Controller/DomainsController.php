@@ -19,7 +19,7 @@ class DomainsController extends AbstractController
         private readonly DomainsHelper $domainsHelper,
     ) {}
 
-    #[Route('/', name: 'list', methods: ['GET'])]
+    #[Route('', name: 'list', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: 'Get list of all available domains',

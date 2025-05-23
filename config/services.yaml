@@ -28,6 +28,7 @@ services:
         arguments:
             $nginxSitesAvailableDir: '%env(NGINX_SITES_AVAILABLE_DIR)%'
             $nginxSitesEnabledDir: '%env(NGINX_SITES_ENABLED_DIR)%'
+            $nginxReloadFile: '%env(NGINX_RELOAD_FILE)%'
 
 
 
