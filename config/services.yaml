@@ -29,6 +29,8 @@ services:
             $nginxSitesAvailableDir: '%env(NGINX_SITES_AVAILABLE_DIR)%'
             $nginxSitesEnabledDir: '%env(NGINX_SITES_ENABLED_DIR)%'
             $nginxReloadFile: '%env(NGINX_RELOAD_FILE)%'
+            $proxyProdHost: '%env(PROXY_PROD_HOST)%'
+            $proxyTestHost: '%env(PROXY_TEST_HOST)%'
 
 
 

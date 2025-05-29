@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\DomainAddParams;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Filesystem\Filesystem;
@@ -20,6 +21,8 @@ class DomainsHelper
         private readonly string $nginxSitesAvailableDir,
         private readonly string $nginxSitesEnabledDir,
         private readonly string $nginxReloadFile,
+        private readonly string $proxyProdHost,
+        private readonly string $proxyTestHost,
         private readonly LoggerInterface $logger,
         private readonly Environment $twig,
     ) {
@@ -69,10 +72,11 @@ class DomainsHelper
             throw new NotFoundHttpException('Domain not exists');
         }
 
-        //$content = file_get_contents($domainPath);
+        $confContent = file_get_contents($domainPath);
 
         return [
             'enabled' => $this->filesystem->exists($this->nginxSitesEnabledDir . '/' . $domain),
+            'isTest' => str_contains($confContent, $this->proxyTestHost),
             //'content' => $content,
         ];
     }
@@ -86,12 +90,13 @@ class DomainsHelper
      * @throws RuntimeError
      * @throws SyntaxError
      */
-    public function addDomain(string $domain): bool
+    public function addDomain(string $domain, DomainAddParams $params): bool
     {
         $filePath = $this->nginxSitesAvailableDir . '/' . $domain;
 
         $fileContent = $this->twig->render('nginx/domain.twig', [
             'domain' => $domain,
+            'proxyhost' => $params->isTest ? $this->proxyTestHost : $this->proxyProdHost,
         ]);
 
         try {
@@ -121,20 +126,20 @@ class DomainsHelper
         $enabledPath = $this->nginxSitesEnabledDir . '/' . $domain;
 
         try {
+            // Remove symbolic link from sites-enabled (if it exists)
+            if ($this->filesystem->exists($enabledPath)) {
+                $this->filesystem->remove($enabledPath);
+                $this->logger->info(sprintf('Symbolic link removed from sites-enabled: %s', $enabledPath));
+            } else {
+                $this->logger->info(sprintf('No symbolic link found in sites-enabled for: %s', $domain));
+            }
+
             // Remove from sites-available
             if ($this->filesystem->exists($availablePath)) {
                 $this->filesystem->remove($availablePath);
                 $this->logger->info(sprintf('Domain configuration file removed from sites-available: %s', $availablePath));
             } else {
                 $this->logger->warning(sprintf('Domain configuration file not found in sites-available: %s', $availablePath));
-            }
-
-            // Remove symbolic link from sites-enabled (if it exists)
-            if ($this->filesystem->exists($enabledPath) && is_link($enabledPath)) {
-                $this->filesystem->remove($enabledPath);
-                $this->logger->info(sprintf('Symbolic link removed from sites-enabled: %s', $enabledPath));
-            } else {
-                $this->logger->info(sprintf('No symbolic link found in sites-enabled for: %s', $domain));
             }
 
             $this->reloadNginx();

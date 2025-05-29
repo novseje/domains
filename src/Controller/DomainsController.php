@@ -2,21 +2,28 @@
 
 namespace App\Controller;
 
+use App\Dto\DomainAddParams;
 use App\Dto\DomainInfo;
 use App\Service\DomainsHelper;
 use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Serializer\Exception\NotEncodableValueException;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 
 #[Route('/api/v1/domains', name: 'domains_')]
 class DomainsController extends AbstractController
 {
     public function __construct(
         private readonly DomainsHelper $domainsHelper,
+        private readonly LoggerInterface $logger,
+        private readonly SerializerInterface $serializer,
     ) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -58,9 +65,33 @@ class DomainsController extends AbstractController
         response: Response::HTTP_CREATED,
         description: 'Add new domain'
     )]
-    public function addDomain(string $domain, Request $request): Response
-    {
-        if ($this->domainsHelper->addDomain($domain)) {
+    #[OA\RequestBody(
+        content: new Model(type: DomainAddParams::class)
+    )]
+    public function addDomain(
+        string $domain,
+        Request $request
+    ): JsonResponse {
+        $jsonContent = $request->getContent();
+
+        if (empty($jsonContent)) {
+            $params = new DomainAddParams();
+        } else {
+            try {
+                /** @var DomainAddParams $domainParams */
+                $params = $this->serializer->deserialize(
+                    $jsonContent,
+                    DomainAddParams::class,
+                    'json'
+                );
+            } catch (NotEncodableValueException $e) {
+                $this->logger->error('JSON deserialization error: ' . $e->getMessage());
+
+                return $this->json(['message' => 'Invalid JSON format.'], Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        if ($this->domainsHelper->addDomain($domain, $params)) {
             return $this->json(['message' => sprintf('Domain %s added successfully.', $domain)], Response::HTTP_CREATED);
         }
 
